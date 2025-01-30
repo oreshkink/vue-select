@@ -3,14 +3,23 @@ import { getVariants } from "@/api";
 import CompanyCard from "@/components/CompanyCard/CompanyCard.vue";
 import LiveSearch from "@/components/Livesearch/LiveSearch.vue";
 import UserCard from "@/components/UserCard/UserCard.vue";
-import composables from "@/composables";
 import { isUser } from "@/entities";
-
-const { variants, query } = composables.useQuery(getVariants);
 </script>
 
 <template>
-  <LiveSearch :variants="variants" @on-input="query">
+  <LiveSearch
+    :on-search="getVariants"
+    @on-select="
+      (variant) => {
+        console.log('Выбран вариант', variant);
+      }
+    "
+    @on-unselect="
+      () => {
+        console.log('Удален вариант');
+      }
+    "
+  >
     <template #dropdown-variant="{ variant }">
       <UserCard v-if="isUser(variant)" :user="variant" />
 

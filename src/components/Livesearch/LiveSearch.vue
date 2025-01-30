@@ -3,8 +3,9 @@
   setup
   generic="T extends { name: string | null; alias: string | null }"
 >
-import { computed, toRefs } from "vue";
+import { computed, nextTick, useTemplateRef } from "vue";
 
+import useQuery from "@/composables/useQuery";
 import { debounce } from "@/shared/utils";
 
 import composables from "./composables";
@@ -14,17 +15,29 @@ const SYMBOLS_THRESHOLD = 3;
 const DEBOUNCE_SEARCH_TIMEOUT = 500;
 
 const props = defineProps<{
-  variants: T[];
+  onSearch: (q: string) => Promise<T[]>;
 }>();
 
 const emit = defineEmits<{
-  onInput: [query: string];
+  onSelect: [variant: T];
+  onUnselect: [];
 }>();
 
-const { variants } = toRefs(props);
+const inputRef = useTemplateRef("input");
+
+const {
+  variants,
+  query: queryVariants,
+  clear: clearVariants,
+} = useQuery(props.onSearch);
 
 const { selectedVariant, selectVariant, unselectVariant, selectByPosition } =
-  composables.useVariantSelection(variants);
+  composables.useVariantSelection({
+    variants,
+    onSelect: (selectedVariant) => {
+      emit("onSelect", selectedVariant);
+    },
+  });
 
 const {
   isOpened: dropDownIsOpened,
@@ -32,26 +45,36 @@ const {
   open: openDropdown,
 } = composables.useDropdownState();
 
-const { selectedPosition, incrementPosition, decrementPosition } =
-  composables.useSelectedPosition(computed(() => variants.value.length));
+const {
+  selectedPosition,
+  incrementPosition,
+  decrementPosition,
+  resetPosition,
+} = composables.useSelectedPosition(computed(() => variants.value.length));
 
 const { keyDownHandler: onKeyDown } = composables.useKeyboardHandlers({
   onEnter: () => {
     selectByPosition(selectedPosition.value);
 
-    closeDropdown();
+    resetState();
   },
   onEscape: closeDropdown,
   onArrowDown: incrementPosition,
   onArrowUp: decrementPosition,
 });
 
-function onInput(query: string) {
-  if (query.length < SYMBOLS_THRESHOLD) {
+function onInput(q: string) {
+  if (q.length < SYMBOLS_THRESHOLD) {
     return false;
   }
 
-  emit("onInput", query);
+  queryVariants(q);
+}
+
+function resetState() {
+  closeDropdown();
+  clearVariants();
+  resetPosition();
 }
 
 const debouncedOnInput = debounce(onInput, DEBOUNCE_SEARCH_TIMEOUT);
@@ -68,11 +91,24 @@ const debouncedOnInput = debounce(onInput, DEBOUNCE_SEARCH_TIMEOUT);
           {{ selectedVariant.name ?? selectedVariant.alias }}
         </div>
 
-        <div class="selected-variant__remove-btn" @click="unselectVariant" />
+        <div
+          class="selected-variant__remove-btn"
+          @click="
+            () => {
+              unselectVariant();
+              emit('onUnselect');
+
+              nextTick(() => {
+                inputRef?.focus();
+              });
+            }
+          "
+        />
       </div>
 
       <div v-else class="input-area__input">
         <input
+          ref="input"
           type="text"
           @input="
             (e) => debouncedOnInput((e.currentTarget as HTMLInputElement).value)
@@ -88,7 +124,8 @@ const debouncedOnInput = debounce(onInput, DEBOUNCE_SEARCH_TIMEOUT);
         @was-selected="
           (newSelectedVariant) => {
             selectVariant(newSelectedVariant);
-            closeDropdown();
+
+            resetState();
           }
         "
       >
@@ -104,11 +141,12 @@ const debouncedOnInput = debounce(onInput, DEBOUNCE_SEARCH_TIMEOUT);
 .selected-variant {
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   background-color: #c8dced;
   height: 32px;
   padding: 5px 10px;
   gap: 10px;
-  max-width: 150px;
+  width: 150px;
   box-sizing: border-box;
 
   .selected-variant__title {

@@ -1,10 +1,18 @@
 import { type Ref, ref } from "vue";
 
-export default function useVariantSelection<T>(variants: Ref<T[]>) {
+export default function useVariantSelection<T>({
+  variants,
+  onSelect,
+}: {
+  variants: Ref<T[]>;
+  onSelect: (v: T) => void;
+}) {
   const selectedVariant: Ref<T | undefined> = ref();
 
   function selectVariant(variant: T) {
     selectedVariant.value = variant;
+
+    onSelect(variant);
   }
 
   function unselectVariant() {
@@ -18,7 +26,7 @@ export default function useVariantSelection<T>(variants: Ref<T[]>) {
       throw Error("Не найден элемент для выбора");
     }
 
-    selectedVariant.value = possibleVariantToSelect;
+    selectVariant(possibleVariantToSelect);
   }
 
   return {

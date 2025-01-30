@@ -1,4 +1,4 @@
-import { ref, watchEffect } from "vue";
+import { ref } from "vue";
 
 export default function useDropdownState() {
   const isOpened = ref(false);
@@ -10,10 +10,6 @@ export default function useDropdownState() {
   function open() {
     isOpened.value = true;
   }
-
-  watchEffect(() => {
-    console.log(isOpened.value);
-  });
 
   return {
     isOpened,

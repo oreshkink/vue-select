@@ -17,7 +17,9 @@ defineProps<{ user: User }>();
     </div>
 
     <div class="user-card__title">
-      {{ user.name ?? (user.alias && getFormattedAlias(user.alias)) }}
+      <span>
+        {{ user.name ?? (user.alias && getFormattedAlias(user.alias)) }}
+      </span>
     </div>
   </div>
 </template>

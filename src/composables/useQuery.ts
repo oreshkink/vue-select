@@ -9,8 +9,13 @@ export default function useQuery<T>(apiFn: (value: string) => Promise<T[]>) {
     variants.value = newVariants;
   }
 
+  function clear() {
+    variants.value = [];
+  }
+
   return {
     variants,
     query,
+    clear,
   };
 }

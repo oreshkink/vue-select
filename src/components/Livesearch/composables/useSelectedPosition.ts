@@ -3,6 +3,10 @@ import { type ComputedRef, ref } from "vue";
 export default function useSelectedPosition(maxPosition: ComputedRef<number>) {
   const selectedPosition = ref(0);
 
+  function resetPosition() {
+    selectedPosition.value = 0;
+  }
+
   function incrementPosition() {
     if (selectedPosition.value + 1 >= maxPosition.value) {
       selectedPosition.value = maxPosition.value - 1;
@@ -27,5 +31,6 @@ export default function useSelectedPosition(maxPosition: ComputedRef<number>) {
     selectedPosition,
     incrementPosition,
     decrementPosition,
+    resetPosition,
   };
 }
